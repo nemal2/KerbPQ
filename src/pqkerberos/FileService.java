@@ -94,6 +94,44 @@ public class FileService {
                 return;
             }
 
+            SecretKey sessionKey =
+                    new SecretKeySpec(ticketContents.sessionKey, "AES");
+
+            AuthenticatorInner auth;
+
+            try {
+
+                byte[] authPlaintext =
+                        PQCrypto.decrypt(
+                                request.authenticator.encryptedData,
+                                sessionKey
+                        );
+
+                auth = MessageIO.fromBytes(
+                        authPlaintext,
+                        AuthenticatorInner.class
+                );
+
+            } catch (Exception e) {
+
+                System.out.println("[Service] REJECTED: Invalid authenticator");
+
+                sendResponse(clientSocket,
+                        new APResponse(false, "Invalid authenticator"));
+
+                return;
+            }
+
+            if (auth.isExpired()) {
+
+                System.out.println("[Service] REJECTED: Authenticator expired");
+
+                sendResponse(clientSocket,
+                        new APResponse(false, "Authenticator expired"));
+
+                return;
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
