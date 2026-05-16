@@ -173,20 +173,6 @@ public class AttackSimulator {
     // =========================================================
     // ATTACK 3: Ticket Tampering
     // =========================================================
-
-    /**
-     * WHAT:  Mallory intercepts the service ticket (an EncryptedTicket),
-     *        flips bytes in the encrypted payload, and presents the modified
-     *        ticket to the FileService hoping to escalate privileges.
-     *
-     * WHY IT FAILS: AES-256-GCM includes a 128-bit authentication tag.
-     *        Any modification to the ciphertext causes AEADBadTagException
-     *        during PQCrypto.decrypt(). The service catches this and rejects
-     *        with "Invalid ticket".
-     *
-     * NIST MAPPING: NIST FIPS 197 + NIST SP 800-38D (GCM mode).
-     *        GCM provides authenticated encryption — confidentiality AND integrity.
-     */
     private static void attack3_TicketTampering(ArtefactCapture capture) throws Exception {
         attackHeader(3, "Ticket Tampering (Bit-Flip Attack)", "Modify encrypted service ticket to escalate privileges");
 
@@ -195,13 +181,11 @@ public class AttackSimulator {
         System.out.println("  to 'admin@PQKERBEROS.REALM' inside the encrypted payload.");
         System.out.println();
 
-        // Copy the encrypted ticket and tamper with it
         EncryptedTicket tampered = new EncryptedTicket(
                 Arrays.copyOf(capture.serviceTicket.encryptedData, capture.serviceTicket.encryptedData.length),
                 capture.serviceTicket.targetService
         );
 
-        // Flip byte 20 (well inside the ciphertext, past the 12-byte IV)
         int flipIndex = 20;
         byte original = tampered.encryptedData[flipIndex];
         tampered.encryptedData[flipIndex] ^= 0xAA;
