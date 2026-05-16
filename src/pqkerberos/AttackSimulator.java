@@ -225,28 +225,12 @@ public class AttackSimulator {
     // =========================================================
     // ATTACK 4: Expired Ticket Reuse
     // =========================================================
-
-    /**
-     * WHAT:  An attacker saves a service ticket from a previous session and
-     *        tries to reuse it after the expiry window has passed.
-     *        We simulate by creating a ticket with an already-expired timestamp.
-     *
-     * WHY IT FAILS: FileService checks ticketContents.isExpired() which compares
-     *        Instant.now().toEpochMilli() > expiryTimestamp. Expired tickets
-     *        are rejected even if the crypto is valid.
-     */
     private static void attack4_ExpiredTicketReuse(ArtefactCapture capture) throws Exception {
         attackHeader(4, "Expired Ticket Reuse", "Present a ticket whose validity window has passed");
 
         System.out.println("  Scenario: Eve stole Alice's service ticket from yesterday.");
         System.out.println("  She presents it today hoping the service doesn't check expiry.");
         System.out.println();
-
-        // We cannot forge a valid expired ticket without the service key.
-        // But we can demonstrate what the check looks like and that it works.
-        // Instead, we create a TicketInner with past timestamp, encrypt it,
-        // and show the service rejects it. For this we need the service key —
-        // which we DON'T have (demonstrating the design is sound).
 
         System.out.println("  [Analysis] To forge an expired ticket, attacker needs the service's");
         System.out.println("  long-term AES-256 key to encrypt a TicketInner with past timestamps.");
@@ -262,7 +246,7 @@ public class AttackSimulator {
 
         // Demonstrate the timestamp check is active by checking the current ticket
         long now = System.currentTimeMillis();
-        long expiry = now + (3600 * 1000L); // Should be ~1hr from now
+        long expiry = now + (3600 * 1000L); 
         boolean wouldBeExpired = now > expiry;
         System.out.println("  [Verification] Current service ticket expiry is ~1 hour from now.");
         System.out.println("  [Verification] A ticket from yesterday would have expiry < now → REJECTED.");
@@ -278,15 +262,6 @@ public class AttackSimulator {
     // =========================================================
     // ATTACK 5: Wrong-Service Ticket Presentation
     // =========================================================
-
-    /**
-     * WHAT:  Alice has a valid ticket for 'fileservice'. She (or an attacker)
-     *        tries to present it to a different service, e.g. 'printservice'.
-     *
-     * WHY IT FAILS: FileService checks ticket.targetService.equals(serviceName).
-     *        The targetService field is set at ticket creation by the TGS and
-     *        cannot be changed without invalidating the AES-GCM tag.
-     */
     private static void attack5_WrongServiceTicket(ArtefactCapture capture) throws Exception {
         attackHeader(5, "Wrong-Service Ticket", "Present fileservice ticket to a different service");
 
@@ -294,13 +269,11 @@ public class AttackSimulator {
         System.out.println("  access 'printservice' using the same ticket (saved from earlier).");
         System.out.println();
 
-        // Create a ticket that claims to be for printservice but has fileservice data
         EncryptedTicket wrongServiceTicket = new EncryptedTicket(
-                capture.serviceTicket.encryptedData,  // fileservice-encrypted content
-                "printservice@PQKERBEROS.REALM"       // but claims to be for printservice
+                capture.serviceTicket.encryptedData,  
+                "printservice@PQKERBEROS.REALM"      
         );
 
-        // Send to fileservice (which checks its own name)
         APRequest fakeRequest = new APRequest(wrongServiceTicket, capture.serviceAuthenticator);
         fakeRequest.requestPayload = "PRINT doc.pdf".getBytes();
 
@@ -313,7 +286,6 @@ public class AttackSimulator {
                 System.out.println("  FileService check:");
                 System.out.println("    if (!serviceName.equals(ticket.targetService)) → REJECTED: Wrong service");
             } else if (!response.success) {
-                // The ticket decryption fails too because we used fileservice's key
                 attackBlocked("Also: wrong-service ticket decryption fails (wrong key → AEADBadTagException).");
             } else {
                 attackSucceeded("Wrong-service ticket accepted!");
@@ -331,17 +303,6 @@ public class AttackSimulator {
     // =========================================================
     // ATTACK 6: KEM Ciphertext Swap
     // =========================================================
-
-    /**
-     * WHAT:  Mallory intercepts the Kyber ciphertext in an ASResponse and swaps it
-     *        with a ciphertext from her own session. If Alice decapsulates Mallory's
-     *        ciphertext, she gets Mallory's session key, not Alice's.
-     *        Then Mallory (who knows her own session key) can decrypt Alice's traffic.
-     *
-     * WHY IT FAILS: The ASResponse is Dilithium-signed by the KDC. The signature
-     *        covers kyberCiphertext (see buildASResponse: dos.write(response.kyberCiphertext)).
-     *        Swapping the ciphertext invalidates the signature → client rejects.
-     */
     private static void attack6_KEMCiphertextSwap(ArtefactCapture capture) throws Exception {
         attackHeader(6, "KEM Ciphertext Swap", "Swap Kyber ciphertext to redirect key establishment");
 
@@ -369,7 +330,6 @@ public class AttackSimulator {
         System.out.println("  [Attacker] Swapped kyberCiphertext in ASResponse.");
         System.out.println("  [Attacker] Now trying to verify the tampered response signature...");
 
-        // Alice verifies — the signature covers the original kyberCiphertext
         boolean verified = PQCrypto.verify(tampered.signedData, tampered.kdcSignature, capture.kdcSigningKey);
 
         if (!verified) {
@@ -395,16 +355,6 @@ public class AttackSimulator {
     // =========================================================
     // ATTACK 7: Brute-Force / Enumeration of Client IDs
     // =========================================================
-
-    /**
-     * WHAT:  Mallory floods the KDC AS with ASRequests using fake client IDs,
-     *        hoping to enumerate valid users or to obtain a TGT for a random user.
-     *
-     * WHY IT FAILS (partially): The KDC returns the same generic error for unknown
-     *        users vs. failed auth, preventing enumeration. The replay cache
-     *        prevents the same request being processed twice. Rate limiting
-     *        (not implemented here — noted as production gap) would throttle this.
-     */
     private static void attack7_BruteForceASRequest() throws Exception {
         attackHeader(7, "Client ID Enumeration / Brute Force", "Flood KDC with fake usernames");
 
@@ -416,7 +366,7 @@ public class AttackSimulator {
                 "admin@PQKERBEROS.REALM",
                 "root@PQKERBEROS.REALM",
                 "mallory@PQKERBEROS.REALM",
-                "alice@PQKERBEROS.REALM",    // This one IS valid
+                "alice@PQKERBEROS.REALM",    
                 "notreal@PQKERBEROS.REALM"
         };
 
@@ -459,20 +409,6 @@ public class AttackSimulator {
     // =========================================================
     // ATTACK 8: Clock-Skew / Timestamp Manipulation
     // =========================================================
-
-    /**
-     * WHAT:  Attacker sends an ASRequest with a timestamp far in the future,
-     *        hoping to get a TGT that remains valid long after normal expiry.
-     *        Or sends a very old timestamp to bypass freshness checks.
-     *
-     * WHY IT FAILS: ASRequest.isExpired() checks:
-     *        (Instant.now().toEpochMilli() - timestamp) / 1000 > 300
-     *        A future timestamp makes age negative (not > 300) — currently passes.
-     *        An old timestamp (age > 300s) is rejected.
-     *
-     * DESIGN NOTE: This reveals a gap — future timestamps should also be rejected.
-     *              We demonstrate the gap and document the fix.
-     */
     private static void attack8_ClockSkewAttack() throws Exception {
         attackHeader(8, "Clock-Skew / Timestamp Manipulation", "Send request with manipulated timestamps");
 
@@ -508,8 +444,6 @@ public class AttackSimulator {
         ASRequest futureTimestampReq = new ASRequest("alice@" + REALM, fakeKEM2.getPublic().getEncoded());
         futureTimestampReq.timestamp = System.currentTimeMillis() + (7200 * 1000L); // 2 hours future
 
-        // isExpired() = (now - future) / 1000 > 300 → negative / 1000 → -7200 > 300 → false
-        // So this PASSES the current check — revealing a gap
         boolean wouldPass = !futureTimestampReq.isExpired();
 
         System.out.println("  [Attack B] futureTimestampReq.isExpired() = " + futureTimestampReq.isExpired());
@@ -541,12 +475,6 @@ public class AttackSimulator {
 
     private static ArtefactCapture captureArtefacts() {
         try {
-            // We need a reference to the KDC's signing key.
-            // In a real capture, Mallory would have pre-distributed it from DNS/LDAP.
-            // For this demo we do a real auth first to get the signing key via a
-            // "legitimate" client that exposes it.
-
-            // Minimal legitimate client to get artefacts
             KeyPair asKEM = PQCrypto.generateKEMKeyPair();
             ASRequest realReq = new ASRequest("alice@" + REALM, asKEM.getPublic().getEncoded());
 
@@ -563,10 +491,6 @@ public class AttackSimulator {
             SecretKey kemKey = PQCrypto.deriveAESKey(sharedSecret, "as-session-key-wrap".getBytes());
             byte[] sessionKeyBytes = PQCrypto.decrypt(asResponse.encryptedSessionKey, kemKey);
             SecretKey tgsSessionKey = new SecretKeySpec(sessionKeyBytes, "AES");
-
-            // Get a real signing key (we read it from the KDC via the first response)
-            // In this demo, we capture it by running a legit client inside the same JVM.
-            // For Mallory, she would get this from a public key directory.
 
             // TGS exchange
             KeyPair serviceKEM = PQCrypto.generateKEMKeyPair();
@@ -608,8 +532,8 @@ public class AttackSimulator {
             ArtefactCapture cap = new ArtefactCapture();
             cap.asResponse          = asResponse;
             cap.serviceTicket       = tgsResponse.serviceTicket;
-            cap.serviceAuthenticator = svcAuth; // this one is already used — replay will fail
-            cap.kdcSigningKey       = null;     // will be set below via DemoKDC
+            cap.serviceAuthenticator = svcAuth; 
+            cap.kdcSigningKey       = null;    
 
             return cap;
 
