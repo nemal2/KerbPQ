@@ -11,7 +11,6 @@ import java.security.PublicKey;
 import pqkerberos.MessageIO.*;
 import pqkerberos.ProtocolMessages.*;
 
-
 public class FileService {
 
     private final String serviceName;
@@ -43,19 +42,55 @@ public class FileService {
             }
         }
     }
+
     private void sendResponse(Socket socket, APResponse response) throws Exception {
         MessageIO.send(socket, response);
     }
+
     private void handleRequest(Socket clientSocket) {
+
         try {
             APRequest request = MessageIO.receive(clientSocket, APRequest.class);
 
             EncryptedTicket ticket = request.serviceTicket;
 
             if (!serviceName.equals(ticket.targetService)) {
+
                 System.out.println("[Service] REJECTED: Wrong service ticket");
+
                 sendResponse(clientSocket,
                         new APResponse(false, "Wrong service"));
+
+                return;
+            }
+
+            TicketInner ticketContents;
+
+            try {
+
+                byte[] plaintext =
+                        PQCrypto.decrypt(ticket.encryptedData, longTermKey);
+
+                ticketContents =
+                        MessageIO.fromBytes(plaintext, TicketInner.class);
+
+            } catch (Exception e) {
+
+                System.out.println("[Service] REJECTED: Invalid ticket");
+
+                sendResponse(clientSocket,
+                        new APResponse(false, "Invalid ticket"));
+
+                return;
+            }
+
+            if (ticketContents.isExpired()) {
+
+                System.out.println("[Service] REJECTED: Expired ticket");
+
+                sendResponse(clientSocket,
+                        new APResponse(false, "Ticket expired"));
+
                 return;
             }
 
