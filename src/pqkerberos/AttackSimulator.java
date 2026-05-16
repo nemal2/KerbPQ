@@ -12,21 +12,6 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * AttackSimulator — Demonstrates real attacks against the PQ-Kerberos protocol
- * and shows exactly why each one fails due to our security mechanisms.
- *
- * ATTACKS IMPLEMENTED:
- *   1. Replay Attack          — resend a captured valid authenticator
- *   2. MITM / Signature Forge — tamper with KDC response, bypass sig check
- *   3. Ticket Tampering       — modify an encrypted ticket byte-by-byte
- *   4. Expired Ticket Reuse   — present a ticket after it has expired
- *   5. Wrong-Service Ticket   — present ticket for service A to service B
- *   6. KEM Ciphertext Swap    — swap Kyber ciphertext between two sessions
- *   7. Brute-Force ASRequest  — flood KDC with fake client IDs
- *   8. Clock-Skew Attack      — send request with a far-future timestamp
- *
- * HOW TO RUN:
- *   Start Demo.java first (KDC + FileService must be running), then run this.
- *   Each attack prints clearly what it attempted and what defence stopped it.
  */
 public class AttackSimulator {
 
