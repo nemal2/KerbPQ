@@ -131,21 +131,6 @@ public class AttackSimulator {
     // =========================================================
     // ATTACK 2: MITM / Signature Forgery
     // =========================================================
-
-    /**
-     * WHAT:  Mallory intercepts the ASResponse and flips one byte in the
-     *        signed data, then presents the tampered response to Alice.
-     *        Alternatively, Mallory tries to forge a new signature without
-     *        knowing the KDC's Dilithium private key.
-     *
-     * WHY IT FAILS: PQCrypto.verify() calls Dilithium3.verify() which checks
-     *        the signature byte-by-byte against the signed payload.
-     *        Any modification to signedData or kdcSignature returns false.
-     *        Client throws SecurityException: "KDC signature INVALID — possible MITM!"
-     *
-     * NIST MAPPING: NIST FIPS 204 — ML-DSA provides existential unforgeability
-     *        under chosen-message attacks (EUF-CMA).
-     */
     private static void attack2_MITMSignatureForgery(ArtefactCapture capture) throws Exception {
         attackHeader(2, "MITM / Signature Forgery", "Tamper with KDC response and bypass signature check");
 
@@ -154,10 +139,8 @@ public class AttackSimulator {
         System.out.println("  The KDC signature no longer matches the tampered data.");
         System.out.println();
 
-        // Simulate by taking the real ASResponse and flipping one byte in signedData
         ASResponse tampered = capture.asResponse;
 
-        // Flip a byte in the signed payload (simulates Mallory modifying the TGT)
         byte[] tamperedSignedData = Arrays.copyOf(tampered.signedData, tampered.signedData.length);
         tamperedSignedData[0] ^= 0xFF;  // Flip all bits of first byte
         tampered.signedData = tamperedSignedData;
@@ -166,7 +149,6 @@ public class AttackSimulator {
                 String.format("%02X", capture.asResponse.signedData[0]) +
                 " → 0xFF (XOR)");
 
-        // Now try to verify — this is what PQKerberosClient does
         boolean verified = PQCrypto.verify(tampered.signedData, tampered.kdcSignature, capture.kdcSigningKey);
 
         if (!verified) {
