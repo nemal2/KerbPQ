@@ -8,10 +8,15 @@ import java.util.concurrent.Executors;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.PublicKey;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import pqkerberos.MessageIO.*;
 import pqkerberos.ProtocolMessages.*;
 
 public class FileService {
+
+    private final Set<String> replayCache =
+            ConcurrentHashMap.newKeySet();
 
     private final String serviceName;
     private final int port;
@@ -131,6 +136,38 @@ public class FileService {
 
                 return;
             }
+
+            // ---------------- Replay protection ----------------
+
+            String replayKey =
+                    auth.clientId + ":" +
+                            auth.timestamp + ":" +
+                            auth.sequenceNumber;
+
+            if (!replayCache.add(replayKey)) {
+
+                System.out.println("[Service] REJECTED: Replay detected");
+
+                sendResponse(clientSocket,
+                        new APResponse(false, "Replay detected"));
+
+                return;
+            }
+
+            // ---------------- Identity check ----------------
+
+            if (!auth.clientId.equals(ticketContents.clientId)) {
+
+                System.out.println("[Service] REJECTED: Identity mismatch");
+
+                sendResponse(clientSocket,
+                        new APResponse(false, "Identity mismatch"));
+
+                return;
+            }
+
+            System.out.println("[Service] ✓ Client authenticated: "
+                    + ticketContents.clientId);
 
         } catch (Exception e) {
             e.printStackTrace();
