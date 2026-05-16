@@ -29,10 +29,6 @@ public class AttackSimulator {
     private static final String BOLD   = "\u001B[1m";
     private static final String RESET  = "\u001B[0m";
 
-    /**
-     * Called by Demo.java when run with "attacks" argument.
-     * The signing key is passed in so signature verification tests work.
-     */
     public static void runAllAttacks(PublicKey kdcSigningKey) throws Exception {
         banner();
         ArtefactCapture capture = captureArtefacts();
