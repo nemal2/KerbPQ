@@ -3,6 +3,8 @@ package pqkerberos;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class FileService {
 
@@ -17,10 +19,14 @@ public class FileService {
     public void start() throws IOException {
         System.out.println("[Service] " + serviceName + " starting on port " + port);
 
+        ExecutorService pool = Executors.newCachedThreadPool();
+
         try (ServerSocket serverSocket = new ServerSocket(port)) {
+            System.out.println("[Service] Ready to accept authenticated requests.");
+
             while (true) {
                 Socket client = serverSocket.accept();
-                handleRequest(client);
+                pool.submit(() -> handleRequest(client));
             }
         }
     }
