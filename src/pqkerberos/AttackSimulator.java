@@ -60,11 +60,8 @@ public class AttackSimulator {
     public static void main(String[] args) throws Exception {
         banner();
 
-        // We need the KDC signing key to simulate a legitimate client first,
-        // then attempt attacks. We get it via a "legitimate" first authentication.
         System.out.println(CYAN + "[Setup] Performing legitimate auth to capture protocol artefacts..." + RESET);
 
-        // First do a real auth to get reference artefacts we can tamper with
         ArtefactCapture capture = captureArtefacts();
         if (capture == null) {
             System.out.println(RED + "[FATAL] Could not perform baseline auth. Is the KDC running?" + RESET);
@@ -99,18 +96,6 @@ public class AttackSimulator {
     // =========================================================
     // ATTACK 1: Replay Attack
     // =========================================================
-
-    /**
-     * WHAT:  We capture a valid EncryptedAuthenticator from a completed session
-     *        and immediately re-send the same APRequest to the service.
-     *
-     * WHY IT FAILS: The service maintains a replayCache (ConcurrentHashMap).
-     *        The authenticator's composite key (clientId + timestamp + sequenceNumber)
-     *        is already in the cache from the first request.
-     *        replayCache.add() returns false → "Replay detected" → PAM_AUTH_ERR.
-     *
-     * NIST MAPPING: NIST SP 800-63B Section 5.2.8 — replay resistance.
-     */
     private static void attack1_ReplayAttack(ArtefactCapture capture) throws Exception {
         attackHeader(1, "Replay Attack", "Resend a captured APRequest to the service");
 
@@ -118,8 +103,6 @@ public class AttackSimulator {
         System.out.println("  her APRequest (serviceTicket + authenticator) and is resending it.");
         System.out.println();
 
-        // The captured APRequest contains a valid ticket + valid authenticator
-        // We send it again verbatim
         APRequest replayedRequest = new APRequest(capture.serviceTicket, capture.serviceAuthenticator);
         replayedRequest.requestPayload    = "LIST /home/alice/documents".getBytes();
         replayedRequest.requestMutualAuth = true;
