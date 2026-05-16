@@ -8,6 +8,8 @@ import java.util.concurrent.Executors;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.PublicKey;
+import pqkerberos.MessageIO.*;
+import pqkerberos.ProtocolMessages.*;
 
 
 public class FileService {
@@ -41,9 +43,24 @@ public class FileService {
             }
         }
     }
-
+    private void sendResponse(Socket socket, APResponse response) throws Exception {
+        MessageIO.send(socket, response);
+    }
     private void handleRequest(Socket clientSocket) {
-        String clientAddr = clientSocket.getRemoteSocketAddress().toString();
-        System.out.println("[Service] Connection from " + clientAddr);
+        try {
+            APRequest request = MessageIO.receive(clientSocket, APRequest.class);
+
+            EncryptedTicket ticket = request.serviceTicket;
+
+            if (!serviceName.equals(ticket.targetService)) {
+                System.out.println("[Service] REJECTED: Wrong service ticket");
+                sendResponse(clientSocket,
+                        new APResponse(false, "Wrong service"));
+                return;
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
