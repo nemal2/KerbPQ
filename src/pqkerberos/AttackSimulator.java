@@ -15,19 +15,19 @@ import java.util.concurrent.TimeUnit;
  */
 public class AttackSimulator {
 
-    private static final String KDC_HOST     = "localhost";
+    private static final String KDC_HOST = "localhost";
     private static final String SERVICE_HOST = "localhost";
-    private static final int    SERVICE_PORT = 9999;
-    private static final String REALM        = "PQKERBEROS.REALM";
+    private static final int SERVICE_PORT = 9999;
+    private static final String REALM = "PQKERBEROS.REALM";
     private static final String SERVICE_NAME = "fileservice@PQKERBEROS.REALM";
 
     // ANSI colour codes for clear terminal output
-    private static final String RED    = "\u001B[31m";
-    private static final String GREEN  = "\u001B[32m";
+    private static final String RED = "\u001B[31m";
+    private static final String GREEN = "\u001B[32m";
     private static final String YELLOW = "\u001B[33m";
-    private static final String CYAN   = "\u001B[36m";
-    private static final String BOLD   = "\u001B[1m";
-    private static final String RESET  = "\u001B[0m";
+    private static final String CYAN = "\u001B[36m";
+    private static final String BOLD = "\u001B[1m";
+    private static final String RESET = "\u001B[0m";
 
     public static void runAllAttacks(PublicKey kdcSigningKey) throws Exception {
         banner();
@@ -104,7 +104,7 @@ public class AttackSimulator {
         System.out.println();
 
         APRequest replayedRequest = new APRequest(capture.serviceTicket, capture.serviceAuthenticator);
-        replayedRequest.requestPayload    = "LIST /home/alice/documents".getBytes();
+        replayedRequest.requestPayload = "LIST /home/alice/documents".getBytes();
         replayedRequest.requestMutualAuth = true;
 
         try (Socket socket = new Socket(SERVICE_HOST, SERVICE_PORT)) {
@@ -114,7 +114,8 @@ public class AttackSimulator {
             if (!response.success && response.message.contains("Replay")) {
                 attackBlocked("Replay cache caught duplicate authenticator.");
                 System.out.println("  Defence code: FileService.java line ~100");
-                System.out.println("    String replayKey = auth.clientId + \":\" + auth.timestamp + \":\" + auth.sequenceNumber;");
+                System.out.println(
+                        "    String replayKey = auth.clientId + \":\" + auth.timestamp + \":\" + auth.sequenceNumber;");
                 System.out.println("    if (!replayCache.add(replayKey)) → sendResponse(REJECTED: Replay detected)");
             } else {
                 attackSucceeded("Replay was NOT detected — replay cache may be missing!");
@@ -142,7 +143,7 @@ public class AttackSimulator {
         ASResponse tampered = capture.asResponse;
 
         byte[] tamperedSignedData = Arrays.copyOf(tampered.signedData, tampered.signedData.length);
-        tamperedSignedData[0] ^= 0xFF;  // Flip all bits of first byte
+        tamperedSignedData[0] ^= 0xFF; // Flip all bits of first byte
         tampered.signedData = tamperedSignedData;
 
         System.out.println("  [Attacker] Flipped byte 0 of signedData: 0x" +
@@ -183,8 +184,7 @@ public class AttackSimulator {
 
         EncryptedTicket tampered = new EncryptedTicket(
                 Arrays.copyOf(capture.serviceTicket.encryptedData, capture.serviceTicket.encryptedData.length),
-                capture.serviceTicket.targetService
-        );
+                capture.serviceTicket.targetService);
 
         int flipIndex = 20;
         byte original = tampered.encryptedData[flipIndex];
@@ -196,7 +196,7 @@ public class AttackSimulator {
 
         // Build a fake APRequest with the tampered ticket
         APRequest fakeRequest = new APRequest(tampered, capture.serviceAuthenticator);
-        fakeRequest.requestPayload    = "READ /etc/passwd".getBytes();
+        fakeRequest.requestPayload = "READ /etc/passwd".getBytes();
         fakeRequest.requestMutualAuth = false;
 
         try (Socket socket = new Socket(SERVICE_HOST, SERVICE_PORT)) {
@@ -246,7 +246,7 @@ public class AttackSimulator {
 
         // Demonstrate the timestamp check is active by checking the current ticket
         long now = System.currentTimeMillis();
-        long expiry = now + (3600 * 1000L); 
+        long expiry = now + (3600 * 1000L);
         boolean wouldBeExpired = now > expiry;
         System.out.println("  [Verification] Current service ticket expiry is ~1 hour from now.");
         System.out.println("  [Verification] A ticket from yesterday would have expiry < now → REJECTED.");
@@ -270,9 +270,8 @@ public class AttackSimulator {
         System.out.println();
 
         EncryptedTicket wrongServiceTicket = new EncryptedTicket(
-                capture.serviceTicket.encryptedData,  
-                "printservice@PQKERBEROS.REALM"      
-        );
+                capture.serviceTicket.encryptedData,
+                "printservice@PQKERBEROS.REALM");
 
         APRequest fakeRequest = new APRequest(wrongServiceTicket, capture.serviceAuthenticator);
         fakeRequest.requestPayload = "PRINT doc.pdf".getBytes();
@@ -366,7 +365,7 @@ public class AttackSimulator {
                 "admin@PQKERBEROS.REALM",
                 "root@PQKERBEROS.REALM",
                 "mallory@PQKERBEROS.REALM",
-                "alice@PQKERBEROS.REALM",    
+                "alice@PQKERBEROS.REALM",
                 "notreal@PQKERBEROS.REALM"
         };
 
@@ -392,7 +391,8 @@ public class AttackSimulator {
         }
 
         System.out.println();
-        System.out.println("  " + YELLOW + "[Analysis]" + RESET + " KDC returns 'Unknown client' for all invalid users.");
+        System.out
+                .println("  " + YELLOW + "[Analysis]" + RESET + " KDC returns 'Unknown client' for all invalid users.");
         System.out.println("  Valid user 'alice' returns a TGT (the KDC correctly authenticates).");
         System.out.println("  Current gap: no rate limiting — in production, add exponential backoff.");
 
@@ -448,7 +448,8 @@ public class AttackSimulator {
 
         System.out.println("  [Attack B] futureTimestampReq.isExpired() = " + futureTimestampReq.isExpired());
         if (wouldPass) {
-            System.out.println("  " + YELLOW + "⚠ GAP IDENTIFIED:" + RESET + " future timestamps pass isExpired() check.");
+            System.out.println(
+                    "  " + YELLOW + "⚠ GAP IDENTIFIED:" + RESET + " future timestamps pass isExpired() check.");
             System.out.println("  Current isExpired(): (now - timestamp) / 1000 > 300");
             System.out.println("  Fix needed: also reject if timestamp > now + 300 (allow 5min clock skew).");
             System.out.println("  Fixed check:");
@@ -467,10 +468,10 @@ public class AttackSimulator {
     // =========================================================
 
     static class ArtefactCapture {
-        ASResponse        asResponse;
-        EncryptedTicket   serviceTicket;
+        ASResponse asResponse;
+        EncryptedTicket serviceTicket;
         EncryptedAuthenticator serviceAuthenticator;
-        PublicKey         kdcSigningKey;
+        PublicKey kdcSigningKey;
     }
 
     private static ArtefactCapture captureArtefacts() {
@@ -482,7 +483,8 @@ public class AttackSimulator {
             try (Socket s = new Socket(KDC_HOST, KDCServer.AS_PORT)) {
                 MessageIO.send(s, realReq);
                 Object reply = MessageIO.receive(s, Object.class);
-                if (!(reply instanceof ASResponse)) return null;
+                if (!(reply instanceof ASResponse))
+                    return null;
                 asResponse = (ASResponse) reply;
             }
 
@@ -504,7 +506,8 @@ public class AttackSimulator {
             try (Socket s = new Socket(KDC_HOST, KDCServer.TGS_PORT)) {
                 MessageIO.send(s, tgsReq);
                 Object reply = MessageIO.receive(s, Object.class);
-                if (!(reply instanceof TGSResponse)) return null;
+                if (!(reply instanceof TGSResponse))
+                    return null;
                 tgsResponse = (TGSResponse) reply;
             }
 
@@ -530,10 +533,10 @@ public class AttackSimulator {
 
             // Package up artefacts
             ArtefactCapture cap = new ArtefactCapture();
-            cap.asResponse          = asResponse;
-            cap.serviceTicket       = tgsResponse.serviceTicket;
-            cap.serviceAuthenticator = svcAuth; 
-            cap.kdcSigningKey       = null;    
+            cap.asResponse = asResponse;
+            cap.serviceTicket = tgsResponse.serviceTicket;
+            cap.serviceAuthenticator = svcAuth;
+            cap.kdcSigningKey = null;
 
             return cap;
 
@@ -547,269 +550,269 @@ public class AttackSimulator {
     // Formatting helpers
     // =========================================================
 
-private static void banner() {
+    private static void banner() {
 
-    System.out.println(BOLD + CYAN);
+        System.out.println(BOLD + CYAN);
 
-    System.out.println("╔════════════════════════════════════════════════════════════════════╗");
-    System.out.println("║                                                                    ║");
-    System.out.println("║              PQ-KERBEROS SECURITY ATTACK SIMULATOR                ║");
-    System.out.println("║                                                                    ║");
-    System.out.println("║     Kyber-768 • Dilithium-3 • AES-256-GCM                         ║");
-    System.out.println("║                                                                    ║");
-    System.out.println("║     Demonstrates real attacks against PQ authentication           ║");
-    System.out.println("║                                                                    ║");
-    System.out.println("╚════════════════════════════════════════════════════════════════════╝");
+        System.out.println("╔════════════════════════════════════════════════════════════════════╗");
+        System.out.println("║                                                                    ║");
+        System.out.println("║              PQ-KERBEROS SECURITY ATTACK SIMULATOR                ║");
+        System.out.println("║                                                                    ║");
+        System.out.println("║     Kyber-768 • Dilithium-3 • AES-256-GCM                         ║");
+        System.out.println("║                                                                    ║");
+        System.out.println("║     Demonstrates real attacks against PQ authentication           ║");
+        System.out.println("║                                                                    ║");
+        System.out.println("╚════════════════════════════════════════════════════════════════════╝");
 
-    System.out.println(RESET);
+        System.out.println(RESET);
 
-    System.out.println(CYAN +
-            "  This simulator demonstrates how post-quantum Kerberos\n" +
-            "  detects, blocks, and mitigates modern authentication attacks.\n"
-            + RESET);
+        System.out.println(CYAN +
+                "  This simulator demonstrates how post-quantum Kerberos\n" +
+                "  detects, blocks, and mitigates modern authentication attacks.\n"
+                + RESET);
 
-    System.out.println();
+        System.out.println();
 
-    protocolFlow();
-}
-
-private static void attackHeader(
-        int num,
-        String name,
-        String description) {
-
-    System.out.println();
-
-    System.out.println(BOLD + CYAN);
-
-    System.out.println("╔════════════════════════════════════════════════════════════════════╗");
-    System.out.printf ("║ ATTACK %-2d : %-51s║%n", num, name);
-    System.out.println("╠════════════════════════════════════════════════════════════════════╣");
-    System.out.printf ("║ %-66s ║%n", description);
-    System.out.println("╚════════════════════════════════════════════════════════════════════╝");
-
-    System.out.println(RESET);
-
-    switch (num) {
-
-        case 1:
-        case 3:
-        case 5:
-        case 8:
-            threatLevel("HIGH");
-            break;
-
-        case 2:
-        case 6:
-            threatLevel("CRITICAL");
-            break;
-
-        default:
-            threatLevel("MEDIUM");
-    }
-}
-
-private static void attackBlocked(String reason) {
-
-    System.out.println();
-
-    System.out.println(GREEN +
-            "   RESULT : ATTACK BLOCKED"
-            + RESET);
-
-    System.out.println("  ─────────────────────────────────────────────────────");
-
-    System.out.println("  Defence Result:");
-    System.out.println("    " + reason);
-
-    System.out.println();
-}
-
-private static void attackSucceeded(String reason) {
-
-    System.out.println();
-
-    System.out.println(RED +
-            "   RESULT : ATTACK SUCCEEDED"
-            + RESET);
-
-    System.out.println("  ─────────────────────────────────────────────────────");
-
-    System.out.println("  Security Impact:");
-    System.out.println("    " + reason);
-
-    System.out.println();
-}
-
-private static void mitigation(String text) {
-
-    System.out.println();
-
-    System.out.println(YELLOW +
-            "   DEFENCE / MITIGATION"
-            + RESET);
-
-    System.out.println("  ─────────────────────────────────────────────────────");
-
-    for (String line : text.split("\n")) {
-        System.out.println("    " + line);
+        protocolFlow();
     }
 
-    System.out.println();
-}
+    private static void attackHeader(
+            int num,
+            String name,
+            String description) {
 
-private static void separator() {
+        System.out.println();
 
-    System.out.println();
+        System.out.println(BOLD + CYAN);
 
-    System.out.println(CYAN +
-            "════════════════════════════════════════════════════════════════════"
-            + RESET);
+        System.out.println("╔════════════════════════════════════════════════════════════════════╗");
+        System.out.printf("║ ATTACK %-2d : %-51s║%n", num, name);
+        System.out.println("╠════════════════════════════════════════════════════════════════════╣");
+        System.out.printf("║ %-66s ║%n", description);
+        System.out.println("╚════════════════════════════════════════════════════════════════════╝");
 
-    System.out.println();
-}
+        System.out.println(RESET);
 
-// =========================================================
-// Threat Level Display
-// =========================================================
+        switch (num) {
 
-private static void threatLevel(String level) {
+            case 1:
+            case 3:
+            case 5:
+            case 8:
+                threatLevel("HIGH");
+                break;
 
-    String colour;
+            case 2:
+            case 6:
+                threatLevel("CRITICAL");
+                break;
 
-    switch (level.toUpperCase()) {
-
-        case "CRITICAL":
-            colour = RED;
-            break;
-
-        case "HIGH":
-            colour = YELLOW;
-            break;
-
-        case "MEDIUM":
-            colour = CYAN;
-            break;
-
-        default:
-            colour = GREEN;
+            default:
+                threatLevel("MEDIUM");
+        }
     }
 
-    System.out.println(colour +
-            "   THREAT LEVEL : " + level
-            + RESET);
+    private static void attackBlocked(String reason) {
 
-    System.out.println();
-}
+        System.out.println();
 
-// =========================================================
-// Attack Timeline
-// =========================================================
+        System.out.println(GREEN +
+                "   RESULT : ATTACK BLOCKED"
+                + RESET);
 
-private static void timeline(String... steps) {
+        System.out.println("  ─────────────────────────────────────────────────────");
 
-    System.out.println(CYAN +
-            "   ATTACK TIMELINE"
-            + RESET);
+        System.out.println("  Defence Result:");
+        System.out.println("    " + reason);
 
-    System.out.println("  ─────────────────────────────────────────────────────");
-
-    for (int i = 0; i < steps.length; i++) {
-        System.out.printf("   [%d] %s%n", (i + 1), steps[i]);
+        System.out.println();
     }
 
-    System.out.println();
-}
+    private static void attackSucceeded(String reason) {
 
-// =========================================================
-// Security Validation Pipeline
-// =========================================================
+        System.out.println();
 
-private static void securityPipeline(String... validations) {
+        System.out.println(RED +
+                "   RESULT : ATTACK SUCCEEDED"
+                + RESET);
 
-    System.out.println(CYAN +
-            "   SECURITY VALIDATION PIPELINE"
-            + RESET);
+        System.out.println("  ─────────────────────────────────────────────────────");
 
-    System.out.println("  ─────────────────────────────────────────────────────");
+        System.out.println("  Security Impact:");
+        System.out.println("    " + reason);
 
-    for (String v : validations) {
-        System.out.println("    ✓ " + v);
+        System.out.println();
     }
 
-    System.out.println();
-}
+    private static void mitigation(String text) {
 
-// =========================================================
-// Protocol Flow Visualization
-// =========================================================
+        System.out.println();
 
-private static void protocolFlow() {
+        System.out.println(YELLOW +
+                "   DEFENCE / MITIGATION"
+                + RESET);
 
-    System.out.println(BOLD + CYAN);
+        System.out.println("  ─────────────────────────────────────────────────────");
 
-    System.out.println("╔════════════════════════════════════════════════════════════════════╗");
-    System.out.println("║                 PQ-KERBEROS AUTHENTICATION FLOW                  ║");
-    System.out.println("╚════════════════════════════════════════════════════════════════════╝");
+        for (String line : text.split("\n")) {
+            System.out.println("    " + line);
+        }
 
-    System.out.println(RESET);
+        System.out.println();
+    }
 
-    System.out.println(
-            "   Client (Alice)\n" +
-            "        │\n" +
-            "        ├── AS-REQ ───────────────────────► KDC Authentication Server\n" +
-            "        │◄─ AS-REP ───────────────────────\n" +
-            "        │\n" +
-            "        ├── TGS-REQ ──────────────────────► Ticket Granting Server\n" +
-            "        │◄─ TGS-REP ──────────────────────\n" +
-            "        │\n" +
-            "        ├── AP-REQ ───────────────────────► FileService\n" +
-            "        │◄─ AP-REP ───────────────────────\n"
-    );
+    private static void separator() {
 
-    System.out.println();
-}
+        System.out.println();
 
-// =========================================================
-// summary
-// =========================================================
+        System.out.println(CYAN +
+                "════════════════════════════════════════════════════════════════════"
+                + RESET);
 
-private static void summary() {
+        System.out.println();
+    }
 
-    System.out.println();
+    // =========================================================
+    // Threat Level Display
+    // =========================================================
 
-    System.out.println(BOLD + CYAN);
+    private static void threatLevel(String level) {
 
-    System.out.println("╔══════════════════════════════════════════════════════════════════════╗");
-    System.out.println("║                    PQ-KERBEROS SECURITY REPORT                     ║");
-    System.out.println("╠══════════════════════════════════════════════════════════════════════╣");
-    System.out.println("║ Attack                     │ Risk     │ Result   │ Defence          ║");
-    System.out.println("╠══════════════════════════════════════════════════════════════════════╣");
-    System.out.println("║ Replay Attack              │ HIGH     │ BLOCKED  │ Replay Cache     ║");
-    System.out.println("║ MITM / Signature Forgery   │ CRITICAL │ BLOCKED  │ Dilithium-3      ║");
-    System.out.println("║ Ticket Tampering           │ HIGH     │ BLOCKED  │ AES-GCM Tag      ║");
-    System.out.println("║ Expired Ticket Reuse       │ MEDIUM   │ BLOCKED  │ Expiry Check     ║");
-    System.out.println("║ Wrong-Service Ticket       │ HIGH     │ BLOCKED  │ Service Validation║");
-    System.out.println("║ KEM Ciphertext Swap        │ CRITICAL │ BLOCKED  │ Signature Cover  ║");
-    System.out.println("║ Username Enumeration       │ MEDIUM   │ PARTIAL  │ Uniform Errors   ║");
-    System.out.println("║ Future Timestamp Attack    │ HIGH     │ GAP      │ Needs Patch      ║");
-    System.out.println("╠══════════════════════════════════════════════════════════════════════╣");
-    System.out.println("║ OVERALL SECURITY STATUS : STRONG                                   ║");
-    System.out.println("║ QUANTUM RESISTANCE      : ENABLED                                  ║");
-    System.out.println("║ KNOWN IMPLEMENTATION GAPS: 2                                       ║");
-    System.out.println("║ SECURITY SCORE          : 8.7 / 10                                 ║");
-    System.out.println("╠══════════════════════════════════════════════════════════════════════╣");
-    System.out.println("║ POST-QUANTUM PROTECTION                                         ✓  ║");
-    System.out.println("║   RSA / DH replaced with Kyber-768                               ✓  ║");
-    System.out.println("║   ECDSA replaced with Dilithium-3                                ✓  ║");
-    System.out.println("║   AES-256 used for quantum-safe symmetric encryption             ✓  ║");
-    System.out.println("╚══════════════════════════════════════════════════════════════════════╝");
+        String colour;
 
-    System.out.println(RESET);
+        switch (level.toUpperCase()) {
 
-    System.out.println(YELLOW +
-            "   Known gaps are documented as production hardening items."
-            + RESET);
+            case "CRITICAL":
+                colour = RED;
+                break;
 
-    System.out.println();
+            case "HIGH":
+                colour = YELLOW;
+                break;
+
+            case "MEDIUM":
+                colour = CYAN;
+                break;
+
+            default:
+                colour = GREEN;
+        }
+
+        System.out.println(colour +
+                "   THREAT LEVEL : " + level
+                + RESET);
+
+        System.out.println();
+    }
+
+    // =========================================================
+    // Attack Timeline
+    // =========================================================
+
+    private static void timeline(String... steps) {
+
+        System.out.println(CYAN +
+                "   ATTACK TIMELINE"
+                + RESET);
+
+        System.out.println("  ─────────────────────────────────────────────────────");
+
+        for (int i = 0; i < steps.length; i++) {
+            System.out.printf("   [%d] %s%n", (i + 1), steps[i]);
+        }
+
+        System.out.println();
+    }
+
+    // =========================================================
+    // Security Validation Pipeline
+    // =========================================================
+
+    private static void securityPipeline(String... validations) {
+
+        System.out.println(CYAN +
+                "   SECURITY VALIDATION PIPELINE"
+                + RESET);
+
+        System.out.println("  ─────────────────────────────────────────────────────");
+
+        for (String v : validations) {
+            System.out.println("    ✓ " + v);
+        }
+
+        System.out.println();
+    }
+
+    // =========================================================
+    // Protocol Flow Visualization
+    // =========================================================
+
+    private static void protocolFlow() {
+
+        System.out.println(BOLD + CYAN);
+
+        System.out.println("╔════════════════════════════════════════════════════════════════════╗");
+        System.out.println("║                 PQ-KERBEROS AUTHENTICATION FLOW                  ║");
+        System.out.println("╚════════════════════════════════════════════════════════════════════╝");
+
+        System.out.println(RESET);
+
+        System.out.println(
+                "   Client (Alice)\n" +
+                        "        │\n" +
+                        "        ├── AS-REQ ───────────────────────► KDC Authentication Server\n" +
+                        "        │◄─ AS-REP ───────────────────────\n" +
+                        "        │\n" +
+                        "        ├── TGS-REQ ──────────────────────► Ticket Granting Server\n" +
+                        "        │◄─ TGS-REP ──────────────────────\n" +
+                        "        │\n" +
+                        "        ├── AP-REQ ───────────────────────► FileService\n" +
+                        "        │◄─ AP-REP ───────────────────────\n");
+
+        System.out.println();
+    }
+
+    // =========================================================
+    // summary
+    // =========================================================
+
+    private static void summary() {
+
+        System.out.println();
+
+        System.out.println(BOLD + CYAN);
+
+        System.out.println("╔══════════════════════════════════════════════════════════════════════╗");
+        System.out.println("║                    PQ-KERBEROS SECURITY REPORT                     ║");
+        System.out.println("╠══════════════════════════════════════════════════════════════════════╣");
+        System.out.println("║ Attack                     │ Risk     │ Result   │ Defence          ║");
+        System.out.println("╠══════════════════════════════════════════════════════════════════════╣");
+        System.out.println("║ Replay Attack              │ HIGH     │ BLOCKED  │ Replay Cache     ║");
+        System.out.println("║ MITM / Signature Forgery   │ CRITICAL │ BLOCKED  │ Dilithium-3      ║");
+        System.out.println("║ Ticket Tampering           │ HIGH     │ BLOCKED  │ AES-GCM Tag      ║");
+        System.out.println("║ Expired Ticket Reuse       │ MEDIUM   │ BLOCKED  │ Expiry Check     ║");
+        System.out.println("║ Wrong-Service Ticket       │ HIGH     │ BLOCKED  │ Service Validation║");
+        System.out.println("║ KEM Ciphertext Swap        │ CRITICAL │ BLOCKED  │ Signature Cover  ║");
+        System.out.println("║ Username Enumeration       │ MEDIUM   │ PARTIAL  │ Uniform Errors   ║");
+        System.out.println("║ Future Timestamp Attack    │ HIGH     │ GAP      │ Needs Patch      ║");
+        System.out.println("╠══════════════════════════════════════════════════════════════════════╣");
+        System.out.println("║ OVERALL SECURITY STATUS : STRONG                                   ║");
+        System.out.println("║ QUANTUM RESISTANCE      : ENABLED                                  ║");
+        System.out.println("║ KNOWN IMPLEMENTATION GAPS: 2                                       ║");
+        System.out.println("║ SECURITY SCORE          : 8.7 / 10                                 ║");
+        System.out.println("╠══════════════════════════════════════════════════════════════════════╣");
+        System.out.println("║ POST-QUANTUM PROTECTION                                         ✓  ║");
+        System.out.println("║   RSA / DH replaced with Kyber-768                               ✓  ║");
+        System.out.println("║   ECDSA replaced with Dilithium-3                                ✓  ║");
+        System.out.println("║   AES-256 used for quantum-safe symmetric encryption             ✓  ║");
+        System.out.println("╚══════════════════════════════════════════════════════════════════════╝");
+
+        System.out.println(RESET);
+
+        System.out.println(YELLOW +
+                "   Known gaps are documented as production hardening items."
+                + RESET);
+
+        System.out.println();
+    }
 }
