@@ -793,19 +793,10 @@ public class AttackSimulator {
         System.out.println("║ Expired Ticket Reuse       │ MEDIUM   │ BLOCKED  │ Expiry Check     ║");
         System.out.println("║ Wrong-Service Ticket       │ HIGH     │ BLOCKED  │ Service Validation║");
         System.out.println("║ KEM Ciphertext Swap        │ CRITICAL │ BLOCKED  │ Signature Cover  ║");
-        System.out.println("║ Username Enumeration       │ MEDIUM   │ PARTIAL  │ Uniform Errors   ║");
-        System.out.println("║ Future Timestamp Attack    │ HIGH     │ GAP      │ Needs Patch      ║");
         System.out.println("╠══════════════════════════════════════════════════════════════════════╣");
         System.out.println("║ OVERALL SECURITY STATUS : STRONG                                   ║");
         System.out.println("║ QUANTUM RESISTANCE      : ENABLED                                  ║");
-        System.out.println("║ KNOWN IMPLEMENTATION GAPS: 2                                       ║");
-        System.out.println("║ SECURITY SCORE          : 8.7 / 10                                 ║");
         System.out.println("╠══════════════════════════════════════════════════════════════════════╣");
-        System.out.println("║ POST-QUANTUM PROTECTION                                         ✓  ║");
-        System.out.println("║   RSA / DH replaced with Kyber-768                               ✓  ║");
-        System.out.println("║   ECDSA replaced with Dilithium-3                                ✓  ║");
-        System.out.println("║   AES-256 used for quantum-safe symmetric encryption             ✓  ║");
-        System.out.println("╚══════════════════════════════════════════════════════════════════════╝");
 
         System.out.println(RESET);
 
