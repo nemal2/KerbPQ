@@ -23,8 +23,9 @@ public class ProtocolMessages {
         }
 
         public boolean isExpired() {
-            return (Instant.now().toEpochMilli() - timestamp) / 1000 > 300;
-        }
+    long ageSec = (Instant.now().toEpochMilli() - timestamp) / 1000;
+    return ageSec > 300 || ageSec < -300;
+}
     }
 
     // ── Step 2: KDC AS → Client ──────────────────────────────

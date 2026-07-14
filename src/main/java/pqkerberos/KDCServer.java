@@ -209,11 +209,12 @@ public class KDCServer {
     public PublicKey getSigningPublicKey() { return kdcSigningKeyPair.getPublic(); }
 
     public byte[] getServiceKeyForDemo(String serviceName) {
+    return serviceDatabase.computeIfAbsent(serviceName, name -> {
         byte[] key = new byte[32];
         new SecureRandom().nextBytes(key);
-        serviceDatabase.put(serviceName, key);
-        return serviceDatabase.get(serviceName);
-    }
+        return key;
+    });
+}
 
     private TicketInner decryptTicket(EncryptedTicket ticket, SecretKey key) {
         try {

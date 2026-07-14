@@ -444,22 +444,20 @@ public class AttackSimulator {
         ASRequest futureTimestampReq = new ASRequest("alice@" + REALM, fakeKEM2.getPublic().getEncoded());
         futureTimestampReq.timestamp = System.currentTimeMillis() + (7200 * 1000L); // 2 hours future
 
-        boolean wouldPass = !futureTimestampReq.isExpired();
+        boolean rejected = futureTimestampReq.isExpired();
 
-        System.out.println("  [Attack B] futureTimestampReq.isExpired() = " + futureTimestampReq.isExpired());
-        if (wouldPass) {
-            System.out.println("  " + YELLOW + "⚠ GAP IDENTIFIED:" + RESET + " future timestamps pass isExpired() check.");
-            System.out.println("  Current isExpired(): (now - timestamp) / 1000 > 300");
-            System.out.println("  Fix needed: also reject if timestamp > now + 300 (allow 5min clock skew).");
-            System.out.println("  Fixed check:");
-            System.out.println("    long ageSec = (now - timestamp) / 1000;");
-            System.out.println("    return ageSec > 300 || ageSec < -300; // reject past AND far-future");
+        System.out.println("  [Attack B] futureTimestampReq.isExpired() = " + rejected);
+        if (rejected) {
+            System.out.println("  " + GREEN + "✓ BLOCKED" + RESET + " — future timestamps now rejected too.");
+            System.out.println("  isExpired(): ageSec > 300 || ageSec < -300 (rejects past AND far-future)");
+        } else {
+            System.out.println("  " + YELLOW + "⚠ GAP:" + RESET + " future timestamp still accepted — check your isExpired() edit.");
         }
 
         mitigation("Old timestamps (>5 min past): rejected by isExpired() check.\n" +
-                "  Future timestamps: GAP — currently accepted. Fix: add ageSec < -300 check.\n" +
+                "  Future timestamps (>5 min ahead): also rejected (ageSec < -300 check).\n" +
                 "  Nonce prevents reuse even if clock manipulation is attempted.\n" +
-                "  Production: NTP-synced clocks on all KDC/client machines reduce skew risk.");
+                "  Production: NTP-synced clocks on all KDC/client machines reduce skew.");
     }
 
     // =========================================================
@@ -603,7 +601,7 @@ public class AttackSimulator {
         System.out.println("║  6. KEM ciphertext swap  │ BLOCKED ✓ │ Signature coverage ║");
         System.out.println("║  7. Brute-force/enum     │ PARTIAL ⚠ │ Uniform errors     ║");
         System.out.println("║  8. Clock-skew (old ts)  │ BLOCKED ✓ │ isExpired()        ║");
-        System.out.println("║  8. Clock-skew (future)  │ GAP     ⚠ │ Fix: add ageSec<-300║");
+        System.out.println("║  8. Clock-skew (future)  │ BLOCKED ✓ │ isExpired() ageSec<-300 ║");
         System.out.println("╠═══════════════════════════════════════════════════════════╣");
         System.out.println("║  QUANTUM THREATS (Shor's algorithm)                       ║");
         System.out.println("║  RSA/DH key exchange     │ N/A     ✓ │ Replaced by Kyber  ║");
