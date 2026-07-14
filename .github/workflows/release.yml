@@ -1,0 +1,72 @@
+name: Release
+
+# Triggers when you push a tag like v1.0.0
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Extract version from tag
+        id: ver
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Set project version
+        run: mvn -q versions:set -DnewVersion=${{ steps.ver.outputs.version }} -DgenerateBackupPoms=false || \
+             mvn -q org.codehaus.mojo:versions-maven-plugin:2.16.2:set -DnewVersion=${{ steps.ver.outputs.version }} -DgenerateBackupPoms=false
+
+      - name: Build fat JAR
+        run: mvn -B clean package
+
+      - name: Install fakeroot (required by jpackage --type deb)
+        run: sudo apt-get update && sudo apt-get install -y fakeroot
+
+      - name: Build .deb package
+        run: |
+          chmod +x packaging/build-deb.sh
+          ./packaging/build-deb.sh ${{ steps.ver.outputs.version }}
+
+      - name: Rename artifacts for release
+        run: |
+          mkdir -p release-out
+          cp target/pqkerberos-${{ steps.ver.outputs.version }}.jar release-out/pqkerberos-${{ steps.ver.outputs.version }}-all.jar
+          cp target/dist/*.deb release-out/ 2>/dev/null || true
+          ls -lh release-out
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-out/*
+          generate_release_notes: true
+          body: |
+            ## PQ-Kerberos ${{ steps.ver.outputs.version }}
+
+            **Quick start (any OS with Java 17+):**
+            ```bash
+            java -jar pqkerberos-${{ steps.ver.outputs.version }}-all.jar attacks
+            ```
+
+            **Debian / Ubuntu install:**
+            ```bash
+            sudo dpkg -i pqkerberos_${{ steps.ver.outputs.version }}_amd64.deb
+            pqkerberos attacks
+            ```
+
+            ⚠️ Research/education demo — not hardened for production. See README "Security Notice".
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
