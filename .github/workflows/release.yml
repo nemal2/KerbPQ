@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q libpam0g-dev dpkg-dev
+
+      - name: Derive version from tag
+        id: ver
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build .deb
+        run: ./scripts/build-deb.sh "${{ steps.ver.outputs.version }}"
+
+      - name: Rename jar for release
+        run: cp target/pqkerberos.jar "dist/pqkerberos-${{ steps.ver.outputs.version }}.jar"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/pqkerberos_${{ steps.ver.outputs.version }}_amd64.deb
+            dist/pqkerberos-${{ steps.ver.outputs.version }}.jar
+          generate_release_notes: true

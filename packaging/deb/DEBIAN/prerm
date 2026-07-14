@@ -1,0 +1,6 @@
+#!/bin/bash
+set -e
+echo "[PQ-Kerberos] Stopping service..."
+systemctl stop pqkerberos.service 2>/dev/null || true
+systemctl disable pqkerberos.service 2>/dev/null || true
+exit 0

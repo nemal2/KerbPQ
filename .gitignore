@@ -1,0 +1,9 @@
+target/
+dist/
+*.class
+*.jar
+pam/*.so
+.idea/
+*.iml
+.vscode/
+*.log

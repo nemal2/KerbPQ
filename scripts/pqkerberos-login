@@ -1,0 +1,22 @@
+#!/bin/bash
+# PQ-Kerberos login helper
+
+USER="$1"
+
+if [ -z "$USER" ]; then
+    echo "Usage: pqkerberos-login <username>"
+    exit 1
+fi
+
+read -rsp "Password: " PASS
+echo
+
+RESPONSE=$(echo "$USER:$PASS" | nc -q 2 127.0.0.1 7777)
+
+if [[ "$RESPONSE" == OK:* ]]; then
+    echo "✓ Authentication successful: $RESPONSE"
+    exit 0
+else
+    echo "✗ Authentication failed: $RESPONSE"
+    exit 1
+fi

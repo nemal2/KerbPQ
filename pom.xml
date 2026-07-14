@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>pqkerberos</groupId>
+    <artifactId>pqkerberos</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+    <name>PQ-Kerberos — Post-Quantum Authentication Demo</name>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- BouncyCastle 1.77 — last version before ML-KEM/ML-DSA rename.
+             If you get ClassNotFound on KyberParameterSpec upgrade to 1.78
+             and change KEM_ALGORITHM = "ML-KEM-768", SIG_ALGORITHM = "ML-DSA-65"
+             in PQCrypto.java.  Both names work in 1.77.                        -->
+        <bc.version>1.77</bc.version>
+    </properties>
+
+    <dependencies>
+        <!-- BouncyCastle core (includes classic + PQC primitives) -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>${bc.version}</version>
+        </dependency>
+        <!-- PKIX / cert utilities (used by BC JCA internally) -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
+            <version>${bc.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Fat JAR — everything bundled for easy deployment -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.6.0</version>
+                <configuration>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                    <archive>
+                        <manifest>
+                            <!-- Default entry point = daemon mode (KDC + PAM socket) -->
+                            <mainClass>pqkerberos.SystemDaemon</mainClass>
+                        </manifest>
+                        <manifestEntries>
+                            <!-- Allow BouncyCastle to self-register its providers -->
+                            <Multi-Release>true</Multi-Release>
+                        </manifestEntries>
+                    </archive>
+                    <finalName>pqkerberos</finalName>
+                    <appendAssemblyId>false</appendAssemblyId>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals><goal>single</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Compiler — make warnings visible, not fatal -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.12.1</version>
+                <configuration>
+                    <source>17</source>
+                    <target>17</target>
+                    <compilerArgs>
+                        <arg>-Xlint:unchecked</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

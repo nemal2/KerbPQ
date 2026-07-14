@@ -1,0 +1,12 @@
+[Unit]
+Description=PQ-Kerberos Post-Quantum Authentication Daemon
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/java -jar /usr/share/pqkerberos/pqkerberos.jar
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

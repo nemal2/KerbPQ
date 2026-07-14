@@ -1,0 +1,3 @@
+#%PAM-1.0
+auth    required    pam_pqkerberos.so
+account required    pam_permit.so

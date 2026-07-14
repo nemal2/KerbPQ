@@ -1,0 +1,43 @@
+#!/bin/bash
+# postinst — runs after files are unpacked.
+set -e
+
+echo "[PQ-Kerberos] Setting up config..."
+mkdir -p /etc/pqkerberos
+
+if [ ! -f /etc/pqkerberos/users.conf ]; then
+    cat > /etc/pqkerberos/users.conf << 'EOF'
+# PQ-Kerberos user store — FOR DEMO/TESTING ONLY.
+# Format: username=password (plaintext — see SECURITY.md before real use)
+alice=alice123
+bob=bob456
+EOF
+    echo "[PQ-Kerberos] Created /etc/pqkerberos/users.conf with demo users"
+else
+    echo "[PQ-Kerberos] /etc/pqkerberos/users.conf already exists — leaving untouched"
+fi
+chown root:root /etc/pqkerberos/users.conf
+chmod 600 /etc/pqkerberos/users.conf
+
+echo "[PQ-Kerberos] Setting permissions..."
+chmod 644 /lib/x86_64-linux-gnu/security/pam_pqkerberos.so
+chmod 755 /usr/local/bin/pqk-exec
+chmod 755 /usr/local/bin/pqkerberos-login
+
+echo "[PQ-Kerberos] Enabling service (not starting automatically)..."
+systemctl daemon-reload || true
+systemctl enable pqkerberos.service || true
+
+echo ""
+echo "======================================================"
+echo "  PQ-Kerberos installed"
+echo ""
+echo "  1. Review users:  /etc/pqkerberos/users.conf"
+echo "  2. Start it:       sudo systemctl start pqkerberos"
+echo "  3. Try it:         pqkerberos-login alice"
+echo ""
+echo "  Demo credentials only — change them before using this"
+echo "  anywhere but a lab/VM. See SECURITY.md."
+echo "======================================================"
+
+exit 0

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+if [ -n "$SUDO_USER" ]; then
+    USERNAME="$SUDO_USER"
+elif [ -n "$PQK_USER" ]; then
+    USERNAME="$PQK_USER"
+else
+    read -r -p "PQ-Kerberos username: " USERNAME
+fi
+
+read -rs -p "PQ-Kerberos password for $USERNAME: " PASSWORD
+echo ""
+
+RESP=$(printf '%s:%s\n' "$USERNAME" "$PASSWORD" | nc -q 2 127.0.0.1 7777 2>/dev/null)
+
+if [[ "$RESP" == OK:* ]]; then
+    echo "[PQ-Kerberos] ✓ Authenticated: $USERNAME"
+    echo "[PQ-Kerberos] ✓ Running: $@"
+    echo "---"
+    exec "$@"
+else
+    echo "[PQ-Kerberos] ✗ Authentication failed: ${RESP#FAIL:}"
+    exit 1
+fi

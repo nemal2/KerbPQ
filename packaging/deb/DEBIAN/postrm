@@ -1,0 +1,14 @@
+#!/bin/bash
+set -e
+
+case "$1" in
+    purge)
+        echo "[PQ-Kerberos] Purging config (users.conf will be removed)..."
+        rm -rf /etc/pqkerberos
+        ;;
+    remove)
+        systemctl daemon-reload || true
+        ;;
+esac
+
+exit 0

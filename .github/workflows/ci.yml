@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build fat JAR
+        run: mvn -B clean package -DskipTests
+
+      - name: Upload jar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pqkerberos-jar
+          path: target/pqkerberos.jar
+
+      - name: Install PAM headers
+        run: sudo apt-get update -q && sudo apt-get install -y -q libpam0g-dev
+
+      - name: Build PAM module
+        run: make -C pam clean all
+
+      - name: Smoke-test embedded demo (no daemon/PAM needed)
+        run: timeout 60 java -cp target/pqkerberos.jar pqkerberos.Demo || true

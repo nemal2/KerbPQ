@@ -1,0 +1,16 @@
+Package: pqkerberos
+Version: __VERSION__
+Section: security
+Priority: optional
+Architecture: amd64
+Depends: default-jre | java17-runtime, libpam-runtime, netcat-openbsd
+Maintainer: nemal2 <nemalx@pqkerberos>
+Description: Post-Quantum Kerberos Authentication System (reference implementation)
+ A Kerberos-style authentication system built on NIST post-quantum
+ cryptography: Kyber-768 (FIPS 203) for key encapsulation and
+ Dilithium-3 (FIPS 204) for digital signatures. Ships a system daemon,
+ a PAM module for sudo/login integration, and pqk-exec for gating
+ individual commands behind a live PQ-Kerberos challenge.
+ .
+ This is a reference / educational implementation — see
+ /usr/share/doc/pqkerberos/SECURITY.md before using it outside a lab.
