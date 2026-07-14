@@ -35,13 +35,20 @@
             <version>${bc.version}</version>
         </dependency>
         <!-- BouncyCastle post-quantum provider (Kyber / Dilithium) -->
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk18on</artifactId>
-            <version>${bc.version}</version>
-            <classifier>jdk18on</classifier>
-            <optional>true</optional>
-        </dependency>
+
+            <!-- BouncyCastle provider (classic algorithms, GCM, etc.) -->
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk18on</artifactId>
+                <version>${bc.version}</version>
+            </dependency>
+            <!-- BouncyCastle PKIX -->
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpkix-jdk18on</artifactId>
+                <version>${bc.version}</version>
+            </dependency>
+
     </dependencies>
 
     <build>
