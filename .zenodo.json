@@ -1,0 +1,16 @@
+{
+  "title": "PQ-Kerberos: Post-Quantum Kerberos Authentication with OS-Level Integration and Empirical Attack Validation",
+  "description": "Full three-party reimplementation of Kerberos AS/TGS/AP with ML-KEM (Kyber-768) and ML-DSA (Dilithium-3), integrated into Linux PAM. ICATC 2026 camera-ready release.",
+  "creators": [
+    {"name": "Perera, Nemal"},
+    {"name": "Perera, Manujaya"},
+    {"name": "Pabasara, Thurunu"},
+    {"name": "Akurana, Tharika"}
+  ],
+  "license": "MIT",
+  "keywords": [
+    "post-quantum cryptography", "Kerberos", "ML-KEM", "ML-DSA",
+    "PAM", "authentication", "Kyber", "Dilithium"
+  ],
+  "upload_type": "software"
+}
